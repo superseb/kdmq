@@ -7,3 +7,51 @@ Tool to query KDM data for a given Rancher version, think of:
 - What addons are included in a Rancher Kubernetes version?
 
 And diff commands to automatically get the differences between two version.
+
+## Docs
+
+Under construction!
+
+Parameters:
+
+- `rancher_version`: The version of Rancher that is used for querying KDM data, examples: v2.5.10, v2.6.3, v2.6.0
+- `channel`: The source of KDM data used, valid options are: `embedded` (what is in the released version, no out-of-band data), `release` (what is currently released in KDM and active to installs refreshing KDM from online source), `dev` (what is currently in development)
+- `channel_version`: The version for the source of KDM data used (KDM is published for each minor Rancher version), examples: v2.5, v2.6
+
+## Examples
+
+* List k8s versions for a Rancher version
+
+```
+kdmq listk8s v2.6.3 release
+```
+
+* Diff k8s versions for Rancher versions
+
+```
+$ kdmq diffk8s v2.6.3 v2.6.3 embedded release
+```
+
+* List k8s images for a Rancher k8s version
+
+```
+kdmq listk8simages v1.22.5-rancher1-1 v2.6 release
+```
+
+* Diff k8s images for Rancher k8s versions
+
+```
+kdmq diffk8simages v1.22.5-rancher1-1 v1.22.4-rancher1-1 v2.6 dev
+```
+
+* List k8s addons for Rancher k8s version
+
+```
+kdmq listk8saddons v1.22.5-rancher1-1 v2.6 release
+```
+
+* Diff k8s addons for Rancher k8s versions
+
+```
+kdmq diffk8saddons v1.22.5-rancher1-1 v1.21.7-rancher1-1 v2.6 release
+```
