@@ -167,7 +167,7 @@ func main() {
 					} else {
 						replyMessage = fmt.Sprintf("%s\nKubernetes versions found for version [%s] in channel [%s]:\n\n%s\n", replyMessage, version2, channel1, strings.Join(k8sVersionsVersion2, "\n"))
 					}
-					replyMessage = fmt.Sprintf(":%s\nDifference:\n%s\n\n", replyMessage, strings.Join(diffK8sVersions, "\n"))
+					replyMessage = fmt.Sprintf("%s\nDifference:\n%s\n\n", replyMessage, strings.Join(diffK8sVersions, "\n"))
 					fmt.Printf(replyMessage)
 
 					return nil
