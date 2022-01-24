@@ -68,7 +68,11 @@ func main() {
 						return fmt.Errorf("Error while trying to get k8s versions, error [%v]", err)
 					}
 
-					fmt.Printf("Kubernetes versions found for version [%s] in channel [%s]:\n\n%s\n", version, channel, strings.Join(k8sVersions, "\n"))
+					if c.Bool("verbose") {
+						fmt.Printf("Kubernetes versions found for version [%s] in channel [%s]:\n%s\n", version, channel, strings.Join(k8sVersions, "\n"))
+						return nil
+					}
+					fmt.Printf("%s\n", strings.Join(k8sVersions, "\n"))
 					return nil
 
 				},
@@ -158,7 +162,12 @@ func main() {
 						}
 
 					}
-					diffK8sVersions := util.Difference(k8sVersionsVersion1, k8sVersionsVersion2)
+					var diffK8sVersions []string
+					if c.Bool("diff-oneway") {
+						diffK8sVersions = util.DifferenceOneWay(k8sVersionsVersion2, k8sVersionsVersion1)
+					} else {
+						diffK8sVersions = util.Difference(k8sVersionsVersion1, k8sVersionsVersion2)
+					}
 					sort.Strings(diffK8sVersions)
 
 					replyMessage := fmt.Sprintf("Kubernetes versions found for version [%s] in channel [%s]:\n\n%s\n", version1, channel1, strings.Join(k8sVersionsVersion1, "\n"))
@@ -167,8 +176,12 @@ func main() {
 					} else {
 						replyMessage = fmt.Sprintf("%s\nKubernetes versions found for version [%s] in channel [%s]:\n\n%s\n", replyMessage, version2, channel1, strings.Join(k8sVersionsVersion2, "\n"))
 					}
-					replyMessage = fmt.Sprintf("%s\nDifference:\n%s\n\n", replyMessage, strings.Join(diffK8sVersions, "\n"))
-					fmt.Printf(replyMessage)
+					if c.Bool("verbose") {
+						replyMessage = fmt.Sprintf("%s\nDifference:\n%s\n\n", replyMessage, strings.Join(diffK8sVersions, "\n"))
+						fmt.Printf(replyMessage)
+						return nil
+					}
+					fmt.Printf("%s\n", strings.Join(diffK8sVersions, "\n"))
 
 					return nil
 
@@ -204,7 +217,11 @@ func main() {
 
 					uniqueImages := util.GetUniqueSystemImageList(data.K8sVersionRKESystemImages[k8sVersion])
 
-					fmt.Printf("Images for Kubernetes version [%s] for channel [%s]:\n\n%s\n", k8sVersion, channel, strings.Join(uniqueImages, "\n"))
+					if c.Bool("verbose") {
+						fmt.Printf("Images for Kubernetes version [%s] for channel [%s]:\n\n%s\n", k8sVersion, channel, strings.Join(uniqueImages, "\n"))
+						return nil
+					}
+					fmt.Printf("%s\n", strings.Join(uniqueImages, "\n"))
 					return nil
 
 				},
@@ -243,13 +260,22 @@ func main() {
 					uniqueImagesK8sVersion2 := util.GetUniqueSystemImageList(data.K8sVersionRKESystemImages[k8sVersion2])
 					lenUniqueImagesK8sVersion2 := len(uniqueImagesK8sVersion2)
 
-					diffImages := util.Difference(uniqueImagesK8sVersion1, uniqueImagesK8sVersion2)
+					var diffImages []string
+					if c.Bool("diff-oneway") {
+						diffImages = util.DifferenceOneWay(uniqueImagesK8sVersion2, uniqueImagesK8sVersion1)
+					} else {
+						diffImages = util.Difference(uniqueImagesK8sVersion1, uniqueImagesK8sVersion2)
+					}
 
 					replyMessage := fmt.Sprintf("Images [%d] for Kubernetes version [%s] for channel [%s]:\n\n%s\n", lenUniqueImagesK8sVersion1, k8sVersion1, channel, strings.Join(uniqueImagesK8sVersion1, "\n"))
 					replyMessage = fmt.Sprintf("%s\nImages [%d] for Kubernetes version [%s] for channel [%s]:\n\n%s\n", replyMessage, lenUniqueImagesK8sVersion2, k8sVersion2, channel, strings.Join(uniqueImagesK8sVersion2, "\n"))
 					replyMessage = fmt.Sprintf("%s\nDifference:\n%s\n", replyMessage, strings.Join(diffImages, "\n"))
-					fmt.Printf(replyMessage)
 
+					if c.Bool("verbose") {
+						fmt.Printf(replyMessage)
+						return nil
+					}
+					fmt.Printf("%s\n", strings.Join(diffImages, "\n"))
 					return nil
 
 				},
@@ -289,7 +315,9 @@ func main() {
 					tableString := &strings.Builder{}
 					table := tablewriter.NewWriter(tableString)
 
-					table.SetHeader([]string{"Addon", "Template name"})
+					if c.Bool("verbose") {
+						table.SetHeader([]string{"Addon", "Template name"})
+					}
 					table.SetAutoWrapText(false)
 					table.SetAutoFormatHeaders(true)
 					table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -313,9 +341,12 @@ func main() {
 
 					table.Render()
 
-					replyMessage = fmt.Sprintf("%s\n%s\n", replyMessage, tableString.String())
-					fmt.Printf(replyMessage)
-
+					if c.Bool("verbose") {
+						replyMessage = fmt.Sprintf("%s\n%s", replyMessage, tableString.String())
+						fmt.Printf(replyMessage)
+						return nil
+					}
+					fmt.Printf("%s", tableString.String())
 					return nil
 
 				},
@@ -352,7 +383,9 @@ func main() {
 					tableString := &strings.Builder{}
 					table := tablewriter.NewWriter(tableString)
 
-					table.SetHeader([]string{"Addon", k8sVersion1, k8sVersion2, "Diff?"})
+					if c.Bool("verbose") {
+						table.SetHeader([]string{"Addon", k8sVersion1, k8sVersion2, "Diff?"})
+					}
 					table.SetAutoWrapText(false)
 					table.SetAutoFormatHeaders(true)
 					table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -385,7 +418,7 @@ func main() {
 
 					table.Render()
 
-					replyMessage := fmt.Sprintf("%s\n", tableString.String())
+					replyMessage := fmt.Sprintf("%s", tableString.String())
 					fmt.Printf(replyMessage)
 
 					return nil
@@ -395,6 +428,16 @@ func main() {
 		},
 	}
 	app.Version = Version
+	app.Flags = []cli.Flag{
+		&cli.BoolFlag{
+			Name:  "verbose",
+			Usage: "more verbose output",
+		},
+		&cli.BoolFlag{
+			Name:  "diff-oneway",
+			Usage: "generate diff one-way instead of default two-way",
+		},
+	}
 
 	err := app.Run(os.Args)
 	if err != nil {
