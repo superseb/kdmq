@@ -56,6 +56,12 @@ kdmq listk8simages v1.22.5-rancher1-1 v2.6 release
 kdmq diffk8simages v1.22.5-rancher1-1 v1.22.4-rancher1-1 v2.6 dev
 ```
 
+* Diff oneway all k8s images between Rancher k8s versions between Rancher version
+
+```
+kdmq --diff-oneway diffallk8simages v2.6.0 v2.6.3 embedded embedded
+```
+
 * List k8s addons for Rancher k8s version
 
 ```

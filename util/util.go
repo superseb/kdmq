@@ -198,10 +198,10 @@ func GetUniqueSystemImageList(rkeSystemImages rketypes.RKESystemImages) []string
 		}
 		images = append(images, imagesReflect.Field(i).Interface().(string))
 	}
-	return getUniqueSlice(images)
+	return GetUniqueSlice(images)
 }
 
-func getUniqueSlice(slice []string) []string {
+func GetUniqueSlice(slice []string) []string {
 	encountered := map[string]bool{}
 	unqiue := []string{}
 
