@@ -29,7 +29,19 @@ kdmq listk8s v2.6.3 release
 * Diff k8s versions for Rancher versions
 
 ```
-$ kdmq diffk8s v2.6.3 v2.6.3 embedded release
+kdmq diffk8s v2.6.3 v2.6.3 embedded release
+```
+
+* Diff oneway k8s versions for Rancher versions
+
+```
+kdmq --diff-oneway diffk8s v2.6.3 v2.6.3 embedded release
+```
+
+* Diff verbose k8s versions for Rancher versions
+
+```
+kdmq --verbose diffk8s v2.6.3 v2.6.3 embedded release
 ```
 
 * List k8s images for a Rancher k8s version
