@@ -34,30 +34,13 @@ func main() {
 					version := c.Args().Get(0)
 					channel := c.Args().Get(1)
 
-					validChannel, err := util.IsValidChannel(channel)
-					if !validChannel {
-						return fmt.Errorf("Not a valid channel: [%s], error [%v]", channel, err)
-					}
 					var data kdm.Data
+					var err error
 
-					if channel == "embedded" {
-						data, err = util.GetKDMDataFromEmbedded(version)
-						if err != nil {
-							return fmt.Errorf("Error while trying to get KDM data from embedded, error [%v]", err)
-						}
-					} else {
-
-						semVersion, err := util.GetSemverFromString(version)
-						if err != nil {
-							return fmt.Errorf("Not a valid semver version: [%s], error [%v]", version, err)
-						}
-
-						data, err = util.GetKDMDataFromURL(channel, fmt.Sprintf("v%d.%d", semVersion.Major, semVersion.Minor))
-						if err != nil {
-							return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
-						}
+					data, err = util.GetDataForChannel(version, channel)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
-
 					k8sVersions, err := util.GetK8sVersionsForVersion(data, version)
 					if err != nil {
 						return fmt.Errorf("Error while trying to get k8s versions, error [%v]", err)
@@ -98,45 +81,17 @@ func main() {
 					var dataVersion2 kdm.Data
 					var customChannel2 bool
 
-					if channel1 == "embedded" {
-						dataVersion1, err = util.GetKDMDataFromEmbedded(version1)
-						if err != nil {
-							return fmt.Errorf("Error while retrieving KDM data for channel [%s], error [%v]", channel1, err)
-						}
-					} else {
-						semVersion1, err := util.GetSemverFromString(version1)
-						if err != nil {
-							return fmt.Errorf("Not a valid semver version: [%s], error [%v]", version1, err)
-						}
-
-						dataVersion1, err = util.GetKDMDataFromURL(channel1, fmt.Sprintf("v%d.%d", semVersion1.Major, semVersion1.Minor))
-						if err != nil {
-							return fmt.Errorf("Error while retrieving KDM data from URL for channel [%s], error [%v]", channel1, err)
-						}
+					dataVersion1, err = util.GetDataForChannel(version1, channel1)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
 					if channel2 != "" {
 						customChannel2 = true
-						validChannel, err := util.IsValidChannel(channel2)
-						if !validChannel {
-							return fmt.Errorf("Not a valid channel2: [%s], error [%v]", channel2, err)
+						dataVersion2, err = util.GetDataForChannel(version2, channel2)
+						if err != nil {
+							return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 						}
 
-						if channel2 == "embedded" {
-							dataVersion2, err = util.GetKDMDataFromEmbedded(version2)
-							if err != nil {
-								return fmt.Errorf("Error while retrieving KDM data for channel [%s], error [%v]", channel2, err)
-							}
-						} else {
-							semVersion2, err := util.GetSemverFromString(version2)
-							if err != nil {
-								return fmt.Errorf("Not a valid semver version: [%s], error [%v]", version2, err)
-							}
-
-							dataVersion2, err = util.GetKDMDataFromURL(channel2, fmt.Sprintf("v%d.%d", semVersion2.Major, semVersion2.Minor))
-							if err != nil {
-								return fmt.Errorf("Error while retrieving KDM data from URL for channel [%s], error [%v]", channel2, err)
-							}
-						}
 					}
 					var k8sVersionsVersion2 []string
 
@@ -197,58 +152,26 @@ func main() {
 					channel1 := c.Args().Get(2)
 					channel2 := c.Args().Get(3)
 
-					validChannel, err := util.IsValidChannel(channel1)
-					if !validChannel {
-						return fmt.Errorf("Not a valid channel1: [%s], error [%v]", channel1, err)
-					}
 					var dataVersion1 kdm.Data
 					var dataVersion2 kdm.Data
+					var err error
 
-					if channel1 == "embedded" {
-						dataVersion1, err = util.GetKDMDataFromEmbedded(version1)
-						if err != nil {
-							return fmt.Errorf("Error while retrieving KDM data for channel [%s], error [%v]", channel1, err)
-						}
-					} else {
-						semVersion1, err := util.GetSemverFromString(version1)
-						if err != nil {
-							return fmt.Errorf("Not a valid semver version: [%s], error [%v]", version1, err)
-						}
-
-						dataVersion1, err = util.GetKDMDataFromURL(channel1, fmt.Sprintf("v%d.%d", semVersion1.Major, semVersion1.Minor))
-						if err != nil {
-							return fmt.Errorf("Error while retrieving KDM data from URL for channel [%s], error [%v]", channel1, err)
-						}
-					}
-					validChannel, err = util.IsValidChannel(channel2)
-					if !validChannel {
-						return fmt.Errorf("Not a valid channel2: [%s], error [%v]", channel2, err)
+					dataVersion1, err = util.GetDataForChannel(version1, channel1)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
 
-					if channel2 == "embedded" {
-						dataVersion2, err = util.GetKDMDataFromEmbedded(version2)
-						if err != nil {
-							return fmt.Errorf("Error while retrieving KDM data for channel [%s], error [%v]", channel2, err)
-						}
-					} else {
-						semVersion2, err := util.GetSemverFromString(version2)
-						if err != nil {
-							return fmt.Errorf("Not a valid semver version: [%s], error [%v]", version2, err)
-						}
-
-						dataVersion2, err = util.GetKDMDataFromURL(channel2, fmt.Sprintf("v%d.%d", semVersion2.Major, semVersion2.Minor))
-						if err != nil {
-							return fmt.Errorf("Error while retrieving KDM data from URL for channel [%s], error [%v]", channel2, err)
-						}
+					dataVersion2, err = util.GetDataForChannel(version2, channel2)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
-					var k8sVersionsVersion2 []string
 
 					k8sVersionsVersion1, err := util.GetK8sVersionsForVersion(dataVersion1, version1)
 					if err != nil {
 						return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version1, err)
 					}
 
-					k8sVersionsVersion2, err = util.GetK8sVersionsForVersion(dataVersion2, version2)
+					k8sVersionsVersion2, err := util.GetK8sVersionsForVersion(dataVersion2, version2)
 					if err != nil {
 						return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version1, err)
 					}
@@ -291,30 +214,31 @@ func main() {
 				Aliases: []string{"lki"},
 				Usage:   "list k8s images",
 				Action: func(c *cli.Context) error {
-					commandUsage := fmt.Sprintf("Usage: %s <k8s_version> <channel_version> <channel>", c.Command.FullName())
+					commandUsage := fmt.Sprintf("Usage: %s <k8s_version> <rancher_version> <channel>", c.Command.FullName())
 					if c.Args().Len() < 3 {
 						return fmt.Errorf("Not enough parameters\n%s", commandUsage)
 					}
 					k8sVersion := c.Args().Get(0)
-					channelVersion := c.Args().Get(1)
+					version := c.Args().Get(1)
 					channel := c.Args().Get(2)
 
-					validChannel, err := util.IsValidChannel(channel)
-					if !validChannel {
-						return fmt.Errorf("Not a valid channel: [%s], error [%v]", channel, err)
-					}
+					var data kdm.Data
+					var err error
 
-					validChannelVersion, err := util.IsValidChannelVersion(channelVersion)
-					if !validChannelVersion {
-						return fmt.Errorf("Not a valid channel version: [%s], error [%v]", channelVersion, err)
-					}
-
-					data, err := util.GetKDMDataFromURL(channel, channelVersion)
+					data, err = util.GetDataForChannel(version, channel)
 					if err != nil {
-						return fmt.Errorf("Error while retrieving KDM data, error [%v]", err)
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
+					}
+
+					k8sVersions, err := util.GetK8sVersionsForVersion(data, version)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get k8s versions, error [%v]", err)
 					}
 
 					uniqueImages := util.GetUniqueSystemImageList(data.K8sVersionRKESystemImages[k8sVersion])
+					if len(uniqueImages) == 0 {
+						return fmt.Errorf("No images found for [%s] and Rancher version [%s] and channel [%s], latest available k8s patch versions: [%s]", k8sVersion, version, channel, strings.Join(k8sVersions, ","))
+					}
 
 					if c.Bool("verbose") {
 						fmt.Printf("Images for Kubernetes version [%s] for channel [%s]:\n\n%s\n", k8sVersion, channel, strings.Join(uniqueImages, "\n"))
@@ -330,34 +254,50 @@ func main() {
 				Aliases: []string{"dki"},
 				Usage:   "diff 2 k8s version images",
 				Action: func(c *cli.Context) error {
-					commandUsage := fmt.Sprintf("Usage: %s <k8s_version1> <k8s_version2> <channel_version> <channel>", c.Command.FullName())
-					if c.Args().Len() < 4 {
+					commandUsage := fmt.Sprintf("Usage: %s <k8s_version1> <k8s_version2> <rancher_version> <channel1> <channel2>", c.Command.FullName())
+					if c.Args().Len() < 5 {
 						return fmt.Errorf("Not enough parameters\n%s", commandUsage)
 					}
 					k8sVersion1 := c.Args().Get(0)
 					k8sVersion2 := c.Args().Get(1)
-					channelVersion := c.Args().Get(2)
-					channel := c.Args().Get(3)
+					version := c.Args().Get(2)
+					channel1 := c.Args().Get(3)
+					channel2 := c.Args().Get(4)
 
-					validChannel, err := util.IsValidChannel(channel)
-					if !validChannel {
-						return fmt.Errorf("Not a valid channel: [%s], error [%v]", channel, err)
-					}
+					var dataVersion1 kdm.Data
+					var dataVersion2 kdm.Data
+					var err error
 
-					validChannelVersion, err := util.IsValidChannelVersion(channelVersion)
-					if !validChannelVersion {
-						return fmt.Errorf("Not a valid channel version: [%s], error [%v]", channel, err)
-					}
-
-					data, err := util.GetKDMDataFromURL(channel, channelVersion)
+					dataVersion1, err = util.GetDataForChannel(version, channel1)
 					if err != nil {
-						return fmt.Errorf("Error while retrieving KDM data, error [%v]", err)
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
+					}
+					dataVersion2, err = util.GetDataForChannel(version, channel2)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
 
-					uniqueImagesK8sVersion1 := util.GetUniqueSystemImageList(data.K8sVersionRKESystemImages[k8sVersion1])
+					uniqueImagesK8sVersion1 := util.GetUniqueSystemImageList(dataVersion1.K8sVersionRKESystemImages[k8sVersion1])
 					lenUniqueImagesK8sVersion1 := len(uniqueImagesK8sVersion1)
-					uniqueImagesK8sVersion2 := util.GetUniqueSystemImageList(data.K8sVersionRKESystemImages[k8sVersion2])
+					uniqueImagesK8sVersion2 := util.GetUniqueSystemImageList(dataVersion2.K8sVersionRKESystemImages[k8sVersion2])
 					lenUniqueImagesK8sVersion2 := len(uniqueImagesK8sVersion2)
+
+					k8sVersions1, err := util.GetK8sVersionsForVersion(dataVersion1, version)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get k8s versions, error [%v]", err)
+					}
+
+					k8sVersions2, err := util.GetK8sVersionsForVersion(dataVersion2, version)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get k8s versions, error [%v]", err)
+					}
+
+					if lenUniqueImagesK8sVersion1 == 0 {
+						return fmt.Errorf("No images found for [%s] and Rancher version [%s] and channel [%s], latest available k8s patch versions: [%s]", k8sVersion1, version, channel1, strings.Join(k8sVersions1, ","))
+					}
+					if lenUniqueImagesK8sVersion2 == 0 {
+						return fmt.Errorf("No images found for [%s] and Rancher version [%s] and channel [%s], latest available k8s patch versions: [%s]", k8sVersion2, version, channel2, strings.Join(k8sVersions2, ","))
+					}
 
 					var diffImages []string
 					if c.Bool("diff-oneway") {
@@ -366,8 +306,8 @@ func main() {
 						diffImages = util.Difference(uniqueImagesK8sVersion1, uniqueImagesK8sVersion2)
 					}
 
-					replyMessage := fmt.Sprintf("Images [%d] for Kubernetes version [%s] for channel [%s]:\n\n%s\n", lenUniqueImagesK8sVersion1, k8sVersion1, channel, strings.Join(uniqueImagesK8sVersion1, "\n"))
-					replyMessage = fmt.Sprintf("%s\nImages [%d] for Kubernetes version [%s] for channel [%s]:\n\n%s\n", replyMessage, lenUniqueImagesK8sVersion2, k8sVersion2, channel, strings.Join(uniqueImagesK8sVersion2, "\n"))
+					replyMessage := fmt.Sprintf("Images [%d] for Kubernetes version [%s] for channel [%s]:\n\n%s\n", lenUniqueImagesK8sVersion1, k8sVersion1, channel1, strings.Join(uniqueImagesK8sVersion1, "\n"))
+					replyMessage = fmt.Sprintf("%s\nImages [%d] for Kubernetes version [%s] for channel [%s]:\n\n%s\n", replyMessage, lenUniqueImagesK8sVersion2, k8sVersion2, channel2, strings.Join(uniqueImagesK8sVersion2, "\n"))
 					replyMessage = fmt.Sprintf("%s\nDifference:\n%s\n", replyMessage, strings.Join(diffImages, "\n"))
 
 					if c.Bool("verbose") {
@@ -384,27 +324,20 @@ func main() {
 				Aliases: []string{"lka"},
 				Usage:   "list k8s version addons",
 				Action: func(c *cli.Context) error {
-					commandUsage := fmt.Sprintf("Usage: %s <k8s_version> <channel_version> <channel>", c.Command.FullName())
+					commandUsage := fmt.Sprintf("Usage: %s <k8s_version> <rancher_version> <channel>", c.Command.FullName())
 					if c.Args().Len() < 3 {
 						return fmt.Errorf("Not enough parameters\n%s", commandUsage)
 					}
 					k8sVersion := c.Args().Get(0)
-					channelVersion := c.Args().Get(1)
+					version := c.Args().Get(1)
 					channel := c.Args().Get(2)
 
-					validChannel, err := util.IsValidChannel(channel)
-					if !validChannel {
-						return fmt.Errorf("Not a valid channel: [%s], error [%v]", channel, err)
-					}
+					var data kdm.Data
+					var err error
 
-					validChannelVersion, err := util.IsValidChannelVersion(channelVersion)
-					if !validChannelVersion {
-						return fmt.Errorf("Not a valid channel version: [%s], error [%v]", channel, err)
-					}
-
-					data, err := util.GetKDMDataFromURL(channel, channelVersion)
+					data, err = util.GetDataForChannel(version, channel)
 					if err != nil {
-						return fmt.Errorf("Error while retrieving KDM data, error [%v]", err)
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
 
 					k8sAddons := util.GetAddonNames(data.K8sVersionedTemplates)
@@ -455,36 +388,34 @@ func main() {
 				Aliases: []string{"dka"},
 				Usage:   "diff 2 k8s version addons",
 				Action: func(c *cli.Context) error {
-					commandUsage := fmt.Sprintf("Usage: %s <k8s_version1> <k8s_version2> <channel_version> <channel>", c.Command.FullName())
+					commandUsage := fmt.Sprintf("Usage: %s <k8s_version1> <k8s_version2> <rancher_version> <channel1> <channel2>", c.Command.FullName())
 
-					if c.Args().Len() < 4 {
+					if c.Args().Len() < 5 {
 						return fmt.Errorf("Not enough parameters\n%s", commandUsage)
 					}
 					k8sVersion1 := c.Args().Get(0)
 					k8sVersion2 := c.Args().Get(1)
-					channelVersion := c.Args().Get(2)
-					channel := c.Args().Get(3)
+					version := c.Args().Get(2)
+					channel1 := c.Args().Get(3)
+					channel2 := c.Args().Get(4)
 
-					validChannel, err := util.IsValidChannel(channel)
-					if !validChannel {
-						return fmt.Errorf("Not a valid channel: [%s], error [%v]", channel, err)
-					}
+					var dataVersion1 kdm.Data
+					var dataVersion2 kdm.Data
+					var err error
 
-					validChannelVersion, err := util.IsValidChannelVersion(channelVersion)
-					if !validChannelVersion {
-						return fmt.Errorf("Not a valid channel version: [%s], error [%v]", channel, err)
-					}
-
-					data, err := util.GetKDMDataFromURL(channel, channelVersion)
+					dataVersion1, err = util.GetDataForChannel(version, channel1)
 					if err != nil {
-						return fmt.Errorf("Error while retrieving KDM data, error [%v]", err)
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
+					dataVersion2, err = util.GetDataForChannel(version, channel2)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
+					}
+
 					tableString := &strings.Builder{}
 					table := tablewriter.NewWriter(tableString)
 
-					if c.Bool("verbose") {
-						table.SetHeader([]string{"Addon", k8sVersion1, k8sVersion2, "Diff?"})
-					}
+					table.SetHeader([]string{"Addon", k8sVersion1, k8sVersion2, "Diff?"})
 					table.SetAutoWrapText(false)
 					table.SetAutoFormatHeaders(true)
 					table.SetHeaderAlignment(tablewriter.ALIGN_LEFT)
@@ -497,14 +428,14 @@ func main() {
 					table.SetTablePadding("\t") // pad with tabs
 					table.SetNoWhiteSpace(true)
 
-					k8sAddons := util.GetAddonNames(data.K8sVersionedTemplates)
+					k8sAddons := util.GetAddonNames(dataVersion1.K8sVersionedTemplates)
 
 					for _, addon := range k8sAddons {
-						templateName1, _, err := util.GetTemplate(data.K8sVersionedTemplates, addon, k8sVersion1)
+						templateName1, _, err := util.GetTemplate(dataVersion1.K8sVersionedTemplates, addon, k8sVersion1)
 						if err != nil {
 							templateName1 = fmt.Sprintf("Error: %v", err)
 						}
-						templateName2, _, err := util.GetTemplate(data.K8sVersionedTemplates, addon, k8sVersion2)
+						templateName2, _, err := util.GetTemplate(dataVersion2.K8sVersionedTemplates, addon, k8sVersion2)
 						if err != nil {
 							templateName2 = fmt.Sprintf("Error: %v", err)
 						}
@@ -516,8 +447,13 @@ func main() {
 					}
 
 					table.Render()
+					var replyMessage string
+					if c.Bool("verbose") {
+						replyMessage = fmt.Sprintf("Data for [%s] for Rancher version [%s] and channel [%s]\n", k8sVersion1, version, channel1)
+						replyMessage = fmt.Sprintf("%sData for [%s] for Rancher version [%s] and channel [%s]\n", replyMessage, k8sVersion2, version, channel2)
+					}
 
-					replyMessage := fmt.Sprintf("%s", tableString.String())
+					replyMessage = fmt.Sprintf("%s%s", replyMessage, tableString.String())
 					fmt.Printf(replyMessage)
 
 					return nil
