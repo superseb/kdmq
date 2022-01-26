@@ -12,6 +12,7 @@ if [[ -n $GITHUB_ENV ]]; then
 fi
 
 GOOS=linux GOARCH=arm go build -a -installsuffix cgo -ldflags "-X main.Version=$VERSION" -o dist/kdmq-"$VERSION"-arm64 main.go
+GOOS=darwin GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-X main.Version=$VERSION" -o dist/kdmq-"$VERSION"-darwin-amd64 main.go
 GOOS=darwin GOARCH=arm64 go build -a -installsuffix cgo -ldflags "-X main.Version=$VERSION" -o dist/kdmq-"$VERSION"-darwin-arm64 main.go
 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -ldflags "-X main.Version=$VERSION" -o dist/kdmq-"$VERSION"-amd64 main.go
 GOOS=windows go build -a -installsuffix cgo -ldflags "-X main.Version=$VERSION" -o dist/kdmq-"$VERSION".exe main.go
