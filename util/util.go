@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 	"reflect"
 	"regexp"
 	"sort"
@@ -106,6 +107,18 @@ func GetRKE2K8sVersionsForVersion(data kdm.Data, version string) ([]string, erro
 
 	sort.Strings(RKE2K8sVersions)
 	return RKE2K8sVersions, nil
+}
+
+func GetKDMDataFromFile(file string) (kdm.Data, error) {
+	b, err := ioutil.ReadFile(file)
+	if err != nil {
+		return kdm.Data{}, fmt.Errorf("Error while trying to read file [%s], error: %v", file, err)
+	}
+	data, err := kdm.FromData(b)
+	if err != nil {
+		return kdm.Data{}, fmt.Errorf("error translating file data to KDM data, error: %v", err)
+	}
+	return data, nil
 }
 
 func GetKDMDataFromURL(channel, channelVersion string) (kdm.Data, error) {
@@ -245,6 +258,7 @@ func GetAddonNames(data map[string]map[string]string) []string {
 		}
 		k8sAddons = append(k8sAddons, addon)
 	}
+	sort.Strings(k8sAddons)
 	return k8sAddons
 }
 
@@ -264,4 +278,58 @@ func GetTemplate(data map[string]map[string]string, templateName, k8sVersion str
 		}
 	}
 	return "", "", fmt.Errorf("no %s template found for k8sVersion %s", templateName, k8sVersion)
+}
+
+func FileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
+}
+
+func GetDataForChannel(version, channel string) (kdm.Data, error) {
+	var data kdm.Data
+	if strings.HasPrefix(channel, "./") {
+		fileExists, err := FileExists(channel)
+		if err != nil {
+			return data, fmt.Errorf("Error checking local data file: [%s], error [%v]", channel, err)
+		}
+		if !fileExists {
+			return data, fmt.Errorf("Local data file [%s] does not exist", channel)
+		}
+		data, err = GetKDMDataFromFile(channel)
+		if err != nil {
+			return data, fmt.Errorf("Error while trying to get KDM data from local data file, error [%v]", err)
+		}
+		return data, nil
+	} else {
+		validChannel, err := IsValidChannel(channel)
+		if !validChannel {
+			return data, fmt.Errorf("Not a valid channel: [%s], error [%v]", channel, err)
+		}
+
+		if channel == "embedded" {
+			data, err = GetKDMDataFromEmbedded(version)
+			if err != nil {
+				return data, fmt.Errorf("Error while trying to get KDM data from embedded, error [%v]", err)
+			}
+			return data, nil
+		} else {
+
+			semVersion, err := GetSemverFromString(version)
+			if err != nil {
+				return data, fmt.Errorf("Not a valid semver version: [%s], error [%v]", version, err)
+			}
+
+			data, err = GetKDMDataFromURL(channel, fmt.Sprintf("v%d.%d", semVersion.Major, semVersion.Minor))
+			if err != nil {
+				return data, fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
+			}
+			return data, nil
+		}
+	}
 }
