@@ -15,7 +15,7 @@ Under construction!
 Parameters:
 
 - `rancher_version`: The version of Rancher that is used for querying KDM data, examples: v2.5.10, v2.6.3, v2.6.0
-- `channel`: The source of KDM data used, valid options are: `embedded` (what is in the released version, no out-of-band data), `release` (what is currently released in KDM and active to installs refreshing KDM from online source), `dev` (what is currently in development), `./$FILE` (local data file, must be prefixed with `./` to indicate local data file)
+- `channel`: The source of KDM data used, valid options are: `embedded` (what is in the released version, no out-of-band data), `release` (what is currently released in KDM and active to installs refreshing KDM from online source), `dev` (what is currently in development), `./$FILE` (local data file, must be prefixed with `./` to indicate local data file), `https://URL_TO/data.json` (remote URL data file, must be a valid URL to be used)
 
 ## Examples
 
@@ -23,6 +23,12 @@ Parameters:
 
 ```
 kdmq listk8s v2.6.3 release
+```
+
+* List k8s versions for a Rancher version using a remote URL data file
+
+```
+kdmq listk8s v2.6.3 https://my.domain.com/data.json
 ```
 
 * Diff k8s versions for Rancher versions
