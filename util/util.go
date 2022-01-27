@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"reflect"
 	"regexp"
@@ -121,6 +122,35 @@ func GetKDMDataFromFile(file string) (kdm.Data, error) {
 	return data, nil
 }
 
+func GetKDMDataFromCustomURL(url string) (kdm.Data, error) {
+	retryClient := retryablehttp.NewClient()
+	retryClient.Logger = nil
+
+	req, err := retryablehttp.NewRequest("GET", url, nil)
+	if err != nil {
+		return kdm.Data{}, fmt.Errorf("error while calling NewRequest for [%s], error: %v", url, err)
+	}
+	resp, err := retryClient.Do(req)
+	if err != nil {
+		return kdm.Data{}, fmt.Errorf("error while executing HTTP request, error: %v", err)
+	}
+
+	if err != nil || resp.StatusCode >= 400 {
+		return kdm.Data{}, fmt.Errorf("error during HTTP get to [%s], error: %v", url, err)
+	}
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return kdm.Data{}, fmt.Errorf("error during reading HTTP response body, error: %v", err)
+	}
+	data, err := kdm.FromData(b)
+	if err != nil {
+		return kdm.Data{}, fmt.Errorf("error during translating response body to KDM data, error: %v", err)
+	}
+	return data, nil
+
+}
+
 func GetKDMDataFromURL(channel, channelVersion string) (kdm.Data, error) {
 	metadataURL := fmt.Sprintf("https://releases.rancher.com/kontainer-driver-metadata/%s-%s/data.json", channel, channelVersion)
 	retryClient := retryablehttp.NewClient()
@@ -135,7 +165,6 @@ func GetKDMDataFromURL(channel, channelVersion string) (kdm.Data, error) {
 		return kdm.Data{}, fmt.Errorf("error while executing HTTP request, error: %v", err)
 	}
 
-	//resp, err := retryablehttp.Get(metadataURL)
 	if err != nil || resp.StatusCode >= 400 {
 		return kdm.Data{}, fmt.Errorf("error during HTTP get to [%s], error: %v", metadataURL, err)
 	}
@@ -293,6 +322,7 @@ func FileExists(path string) (bool, error) {
 
 func GetDataForChannel(version, channel string) (kdm.Data, error) {
 	var data kdm.Data
+	var err error
 	if strings.HasPrefix(channel, "./") {
 		fileExists, err := FileExists(channel)
 		if err != nil {
@@ -304,6 +334,12 @@ func GetDataForChannel(version, channel string) (kdm.Data, error) {
 		data, err = GetKDMDataFromFile(channel)
 		if err != nil {
 			return data, fmt.Errorf("Error while trying to get KDM data from local data file, error [%v]", err)
+		}
+		return data, nil
+	} else if isValidUrl(channel) {
+		data, err = GetKDMDataFromCustomURL(channel)
+		if err != nil {
+			return data, fmt.Errorf("Error while trying to get KDM data from custom URL, error [%v]", err)
 		}
 		return data, nil
 	} else {
@@ -332,4 +368,18 @@ func GetDataForChannel(version, channel string) (kdm.Data, error) {
 			return data, nil
 		}
 	}
+}
+
+func isValidUrl(toTest string) bool {
+	_, err := url.ParseRequestURI(toTest)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.Parse(toTest)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
 }
