@@ -181,48 +181,23 @@ func GetKDMDataFromURL(channel, channelVersion string) (kdm.Data, error) {
 }
 
 func GetKDMDataFromEmbedded(rancherVersion string) (kdm.Data, error) {
-	goModURL := fmt.Sprintf("https://raw.githubusercontent.com/rancher/rancher/%s/go.mod", rancherVersion)
+	metadataURL := fmt.Sprintf("https://raw.githubusercontent.com/superseb/kdmq/main/embedded/data.%s.json", rancherVersion)
 	retryClient := retryablehttp.NewClient()
 	retryClient.Logger = nil
 
-	req1, err := retryablehttp.NewRequest("GET", goModURL, nil)
-	if err != nil {
-		return kdm.Data{}, fmt.Errorf("error while calling NewRequest for [%s], error: %v", goModURL, err)
-	}
-	resp1, err := retryClient.Do(req1)
-	if err != nil || resp1.StatusCode >= 400 {
-		return kdm.Data{}, fmt.Errorf("error during HTTP get to [%s], error: %v", goModURL, err)
-	}
-
-	defer resp1.Body.Close()
-	goMod, err := ioutil.ReadAll(resp1.Body)
-	if err != nil {
-		return kdm.Data{}, fmt.Errorf("error during reading HTTP response body, error: %v", err)
-	}
-	re := regexp.MustCompile("(?m)github.com/rancher/rke\\s(.*)$")
-	match := re.FindStringSubmatch(string(goMod))
-	if len(match) < 1 {
-		return kdm.Data{}, fmt.Errorf("error during finding RKE version from go.mod")
-	}
-	rkeVersion := match[1]
-	splittedRKEVersion := strings.Split(rkeVersion, "-")
-	if len(splittedRKEVersion) >= 3 {
-		rkeVersion = splittedRKEVersion[2]
-	}
-	metadataURL := fmt.Sprintf("https://raw.githubusercontent.com/rancher/rke/%s/data/data.json", rkeVersion)
-	req2, err := retryablehttp.NewRequest("GET", metadataURL, nil)
+	req, err := retryablehttp.NewRequest("GET", metadataURL, nil)
 	if err != nil {
 		return kdm.Data{}, fmt.Errorf("error while calling NewRequest for [%s], error: %v", metadataURL, err)
 	}
-	resp2, err := retryClient.Do(req2)
-	if err != nil || resp2.StatusCode >= 400 {
-		return kdm.Data{}, fmt.Errorf("error during HTTP get to [%s], error: %v", goModURL, err)
+	resp, err := retryClient.Do(req)
+	if err != nil || resp.StatusCode >= 400 {
+		return kdm.Data{}, fmt.Errorf("error during HTTP get to [%s], error: %v", metadataURL, err)
 	}
 
-	defer resp2.Body.Close()
-	b, err := ioutil.ReadAll(resp2.Body)
+	defer resp.Body.Close()
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return kdm.Data{}, fmt.Errorf("error during reading 2nd HTTP response body, error: %v", err)
+		return kdm.Data{}, fmt.Errorf("error during reading HTTP response body, error: %v", err)
 	}
 	data, err := kdm.FromData(b)
 	if err != nil {
