@@ -6,9 +6,11 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/coreos/go-semver v0.3.0
 	github.com/hashicorp/go-retryablehttp v0.7.0
+	github.com/mcuadros/go-version v0.0.0-20180611085657-6d5863ca60fa
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/rancher/rancher v0.0.0-20211218171736-3c1d5fac3248
 	github.com/rancher/rke v1.3.3
+	github.com/sirupsen/logrus v1.8.1
 	github.com/urfave/cli/v2 v2.2.0
 )
 
@@ -127,7 +129,6 @@ require (
 	github.com/mattn/go-isatty v0.0.14 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
-	github.com/mcuadros/go-version v0.0.0-20180611085657-6d5863ca60fa // indirect
 	github.com/minio/md5-simd v1.1.0 // indirect
 	github.com/minio/minio-go/v7 v7.0.10 // indirect
 	github.com/minio/sha256-simd v0.1.1 // indirect
@@ -189,7 +190,6 @@ require (
 	github.com/segmentio/kafka-go v0.0.0-20190411192201-218fd49cff39 // indirect
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
-	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
 	github.com/spf13/cobra v1.2.1 // indirect

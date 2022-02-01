@@ -13,10 +13,12 @@ import (
 	"github.com/blang/semver/v4"
 	sv "github.com/coreos/go-semver/semver"
 	"github.com/hashicorp/go-retryablehttp"
+	mVersion "github.com/mcuadros/go-version"
 	kd "github.com/rancher/rancher/pkg/controllers/management/kontainerdrivermetadata"
 	ext "github.com/rancher/rancher/pkg/image/external"
 	rketypes "github.com/rancher/rke/types"
 	"github.com/rancher/rke/types/kdm"
+	rkeutil "github.com/rancher/rke/util"
 )
 
 func Difference(slice1 []string, slice2 []string) []string {
@@ -110,6 +112,30 @@ func GetRKE2K8sVersionsForVersion(data kdm.Data, version string) ([]string, erro
 	return RKE2K8sVersions, nil
 }
 
+func GetK3SK8sVersionsForVersion(data kdm.Data, version string) ([]string, error) {
+	var K3SK8sVersions []string
+	k3sAllImages, err := ext.GetExternalImages(version, data.K3S, ext.K3S, &sv.Version{
+		Major: 1,
+		Minor: 21,
+		Patch: 0,
+	})
+
+	if err != nil {
+		return K3SK8sVersions, err
+	}
+	for _, image := range k3sAllImages {
+		if strings.HasPrefix(image, "rancher/k3s-upgrade") {
+			splitImage := strings.Split(image, ":")
+			if len(splitImage) == 2 {
+				K3SK8sVersions = append(K3SK8sVersions, splitImage[1])
+			}
+		}
+	}
+
+	sort.Strings(K3SK8sVersions)
+	return K3SK8sVersions, nil
+}
+
 func GetKDMDataFromFile(file string) (kdm.Data, error) {
 	b, err := ioutil.ReadFile(file)
 	if err != nil {
@@ -152,6 +178,9 @@ func GetKDMDataFromCustomURL(url string) (kdm.Data, error) {
 }
 
 func GetKDMDataFromURL(channel, channelVersion string) (kdm.Data, error) {
+	if channel == "latest" {
+		channel = "release"
+	}
 	metadataURL := fmt.Sprintf("https://releases.rancher.com/kontainer-driver-metadata/%s-%s/data.json", channel, channelVersion)
 	retryClient := retryablehttp.NewClient()
 	retryClient.Logger = nil
@@ -234,7 +263,7 @@ func GetUniqueSlice(slice []string) []string {
 }
 
 func IsValidChannel(channel string) (bool, error) {
-	validChannels := []string{"dev", "release", "embedded"}
+	validChannels := []string{"release", "latest", "dev"}
 	for _, validChannel := range validChannels {
 		if validChannel == channel {
 			return true, nil
@@ -323,7 +352,7 @@ func GetDataForChannel(version, channel string) (kdm.Data, error) {
 			return data, fmt.Errorf("Not a valid channel: [%s], error [%v]", channel, err)
 		}
 
-		if channel == "embedded" {
+		if channel == "release" {
 			data, err = GetKDMDataFromEmbedded(version)
 			if err != nil {
 				return data, fmt.Errorf("Error while trying to get KDM data from embedded, error [%v]", err)
@@ -357,4 +386,24 @@ func isValidUrl(toTest string) bool {
 	}
 
 	return true
+}
+
+func GetLatestMajorMinorK8sVersions(k8sVersions []string) []string {
+	maxVersionForMajorK8sVersion := map[string]string{}
+	latestK8sVersions := []string{}
+	for _, k8sVersion := range k8sVersions {
+		majorVersion := rkeutil.GetTagMajorVersion(k8sVersion)
+		if curr, ok := maxVersionForMajorK8sVersion[majorVersion]; !ok || mVersion.Compare(k8sVersion, curr, ">") {
+			maxVersionForMajorK8sVersion[majorVersion] = k8sVersion
+		}
+	}
+	for _, latestK8sVersion := range maxVersionForMajorK8sVersion {
+		latestK8sVersions = append(latestK8sVersions, latestK8sVersion)
+	}
+
+	return latestK8sVersions
+}
+
+func GetValidProducts() []string {
+	return []string{"rke", "rke2", "k3s"}
 }
