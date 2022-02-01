@@ -1,7 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"sort"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/rancher/rke/types/kdm"
+	"github.com/sirupsen/logrus"
 	"github.com/superseb/kdmq/util"
 	"github.com/urfave/cli/v2"
 )
@@ -23,31 +26,58 @@ func main() {
 			{
 				Name:    "listk8s",
 				Aliases: []string{"lk"},
-				Usage:   "list k8s versions for Rancher version",
+				Usage:   "list products (rke/rke2/k3s) k8s versions for Rancher version",
 				Action: func(c *cli.Context) error {
-					commandUsage := fmt.Sprintf("Usage: %s <rancher_version> <channel>", c.Command.FullName())
+					commandUsage := fmt.Sprintf("Usage: %s <product> <rancher_version> <channel>", c.Command.FullName())
 
-					if c.Args().Len() < 2 {
+					if c.Args().Len() < 3 {
 						return fmt.Errorf("Not enough parameters\n%s", commandUsage)
 					}
 
-					version := c.Args().Get(0)
-					channel := c.Args().Get(1)
+					product := c.Args().Get(0)
+					version := c.Args().Get(1)
+					channel := c.Args().Get(2)
 
-					var data kdm.Data
-					var err error
-
-					data, err = util.GetDataForChannel(version, channel)
+					data, err := util.GetDataForChannel(version, channel)
 					if err != nil {
 						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
-					k8sVersions, err := util.GetK8sVersionsForVersion(data, version)
-					if err != nil {
-						return fmt.Errorf("Error while trying to get k8s versions, error [%v]", err)
+					var k8sVersions []string
+
+					switch product {
+					case "rke":
+						k8sVersions, err = util.GetK8sVersionsForVersion(data, version)
+						if err != nil {
+							return fmt.Errorf("Error while trying to get RKE k8s versions, error [%v]", err)
+						}
+
+					case "rke2":
+						k8sVersions, err = util.GetRKE2K8sVersionsForVersion(data, version)
+						if err != nil {
+							return fmt.Errorf("Error while trying to get RKE2 k8s versions, error [%v]", err)
+						}
+						if !c.Bool("show-all") {
+							k8sVersions = util.GetLatestMajorMinorK8sVersions(k8sVersions)
+						}
+					case "k3s":
+						k8sVersions, err = util.GetK3SK8sVersionsForVersion(data, version)
+						if err != nil {
+							return fmt.Errorf("Error while trying to get K3S k8s versions, error [%v]", err)
+						}
+						if !c.Bool("show-all") {
+							k8sVersions = util.GetLatestMajorMinorK8sVersions(k8sVersions)
+						}
+					default:
+						return fmt.Errorf("Not a valid product [%s], valid products are %v", product, strings.Join(util.GetValidProducts(), ","))
 					}
 
 					if c.Bool("verbose") {
 						fmt.Printf("Kubernetes versions found for version [%s] in channel [%s]:\n%s\n", version, channel, strings.Join(k8sVersions, "\n"))
+						return nil
+					}
+					if c.String("output") == "json" {
+						jsonOutput, _ := json.Marshal(k8sVersions)
+						fmt.Printf("%s\n", string(jsonOutput))
 						return nil
 					}
 					fmt.Printf("%s\n", strings.Join(k8sVersions, "\n"))
@@ -60,17 +90,18 @@ func main() {
 				Aliases: []string{"dk"},
 				Usage:   "diff 2 k8s version",
 				Action: func(c *cli.Context) error {
-					commandUsage := fmt.Sprintf("Usage: %s <rancher_version1> <rancher_version2> <channel1> [channel2]", c.Command.FullName())
+					commandUsage := fmt.Sprintf("Usage: %s <product> <rancher_version1> <rancher_version2> <channel1> [channel2]", c.Command.FullName())
 
-					if c.Args().Len() < 3 {
+					if c.Args().Len() < 4 {
 						return fmt.Errorf("Not enough parameters\n:%s", commandUsage)
 					}
-					version1 := c.Args().Get(0)
-					version2 := c.Args().Get(1)
-					channel1 := c.Args().Get(2)
+					product := c.Args().Get(0)
+					version1 := c.Args().Get(1)
+					version2 := c.Args().Get(2)
+					channel1 := c.Args().Get(3)
 					var channel2 string
-					if c.Args().Len() == 4 {
-						channel2 = c.Args().Get(3)
+					if c.Args().Len() == 5 {
+						channel2 = c.Args().Get(4)
 					}
 
 					validChannel, err := util.IsValidChannel(channel1)
@@ -93,24 +124,71 @@ func main() {
 						}
 
 					}
+					var k8sVersionsVersion1 []string
 					var k8sVersionsVersion2 []string
 
-					k8sVersionsVersion1, err := util.GetK8sVersionsForVersion(dataVersion1, version1)
-					if err != nil {
-						return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version1, err)
-					}
-
-					if customChannel2 {
-						k8sVersionsVersion2, err = util.GetK8sVersionsForVersion(dataVersion2, version2)
+					switch product {
+					case "rke":
+						k8sVersionsVersion1, err = util.GetK8sVersionsForVersion(dataVersion1, version1)
 						if err != nil {
-							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
+							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version1, err)
 						}
-					} else {
-						k8sVersionsVersion2, err = util.GetK8sVersionsForVersion(dataVersion1, version2)
-						if err != nil {
-							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
-						}
+						if customChannel2 {
+							k8sVersionsVersion2, err = util.GetK8sVersionsForVersion(dataVersion2, version2)
+							if err != nil {
+								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
+							}
+						} else {
+							k8sVersionsVersion2, err = util.GetK8sVersionsForVersion(dataVersion1, version2)
+							if err != nil {
+								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
+							}
 
+						}
+					case "rke2":
+						k8sVersionsVersion1, err = util.GetRKE2K8sVersionsForVersion(dataVersion1, version1)
+						if err != nil {
+							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version1, err)
+						}
+						if customChannel2 {
+							k8sVersionsVersion2, err = util.GetRKE2K8sVersionsForVersion(dataVersion2, version2)
+							if err != nil {
+								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
+							}
+						} else {
+							k8sVersionsVersion2, err = util.GetRKE2K8sVersionsForVersion(dataVersion1, version2)
+							if err != nil {
+								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
+							}
+
+						}
+						if !c.Bool("show-all") {
+							k8sVersionsVersion1 = util.GetLatestMajorMinorK8sVersions(k8sVersionsVersion1)
+							k8sVersionsVersion2 = util.GetLatestMajorMinorK8sVersions(k8sVersionsVersion2)
+						}
+					case "k3s":
+						k8sVersionsVersion1, err = util.GetK3SK8sVersionsForVersion(dataVersion1, version1)
+						if err != nil {
+							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version1, err)
+						}
+						if customChannel2 {
+							k8sVersionsVersion2, err = util.GetK3SK8sVersionsForVersion(dataVersion2, version2)
+							if err != nil {
+								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
+							}
+						} else {
+							k8sVersionsVersion2, err = util.GetK3SK8sVersionsForVersion(dataVersion1, version2)
+							if err != nil {
+								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
+							}
+
+						}
+						if !c.Bool("show-all") {
+							k8sVersionsVersion1 = util.GetLatestMajorMinorK8sVersions(k8sVersionsVersion1)
+							k8sVersionsVersion2 = util.GetLatestMajorMinorK8sVersions(k8sVersionsVersion2)
+						}
+					default:
+						return fmt.Errorf("Not a valid product [%s], valid products are %v", product, strings.Join(util.GetValidProducts(), ","))
 					}
 					var diffK8sVersions []string
 					if c.Bool("diff-oneway") {
@@ -129,6 +207,11 @@ func main() {
 					if c.Bool("verbose") {
 						replyMessage = fmt.Sprintf("%s\nDifference:\n%s\n\n", replyMessage, strings.Join(diffK8sVersions, "\n"))
 						fmt.Printf(replyMessage)
+						return nil
+					}
+					if c.String("output") == "json" {
+						jsonOutput, _ := json.Marshal(diffK8sVersions)
+						fmt.Printf("%s\n", string(jsonOutput))
 						return nil
 					}
 					fmt.Printf("%s\n", strings.Join(diffK8sVersions, "\n"))
@@ -472,7 +555,16 @@ func main() {
 			Name:  "diff-oneway",
 			Usage: "generate diff one-way instead of default two-way",
 		},
+		&cli.BoolFlag{
+			Name:  "show-all",
+			Usage: "show all k8s versions",
+		},
+		&cli.StringFlag{
+			Name:  "output",
+			Usage: "format the output",
+		},
 	}
+	logrus.SetOutput(ioutil.Discard)
 
 	err := app.Run(os.Args)
 	if err != nil {
