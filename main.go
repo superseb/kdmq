@@ -38,6 +38,8 @@ func main() {
 					version := c.Args().Get(1)
 					channel := c.Args().Get(2)
 
+					version = util.PrependV(version)
+
 					data, err := util.GetDataForChannel(version, channel)
 					if err != nil {
 						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
@@ -90,19 +92,19 @@ func main() {
 				Aliases: []string{"dk"},
 				Usage:   "diff 2 k8s version",
 				Action: func(c *cli.Context) error {
-					commandUsage := fmt.Sprintf("Usage: %s <product> <rancher_version1> <rancher_version2> <channel1> [channel2]", c.Command.FullName())
+					commandUsage := fmt.Sprintf("Usage: %s <product> <rancher_version1> <rancher_version2> <channel1> <channel2>", c.Command.FullName())
 
-					if c.Args().Len() < 4 {
+					if c.Args().Len() < 5 {
 						return fmt.Errorf("Not enough parameters\n:%s", commandUsage)
 					}
 					product := c.Args().Get(0)
 					version1 := c.Args().Get(1)
 					version2 := c.Args().Get(2)
 					channel1 := c.Args().Get(3)
-					var channel2 string
-					if c.Args().Len() == 5 {
-						channel2 = c.Args().Get(4)
-					}
+					channel2 := c.Args().Get(4)
+
+					version1 = util.PrependV(version1)
+					version2 = util.PrependV(version2)
 
 					validChannel, err := util.IsValidChannel(channel1)
 					if !validChannel {
@@ -110,20 +112,16 @@ func main() {
 					}
 					var dataVersion1 kdm.Data
 					var dataVersion2 kdm.Data
-					var customChannel2 bool
 
 					dataVersion1, err = util.GetDataForChannel(version1, channel1)
 					if err != nil {
 						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
-					if channel2 != "" {
-						customChannel2 = true
-						dataVersion2, err = util.GetDataForChannel(version2, channel2)
-						if err != nil {
-							return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
-						}
-
+					dataVersion2, err = util.GetDataForChannel(version2, channel2)
+					if err != nil {
+						return fmt.Errorf("Error while trying to get KDM data, error [%v]", err)
 					}
+
 					var k8sVersionsVersion1 []string
 					var k8sVersionsVersion2 []string
 
@@ -133,34 +131,18 @@ func main() {
 						if err != nil {
 							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version1, err)
 						}
-						if customChannel2 {
-							k8sVersionsVersion2, err = util.GetK8sVersionsForVersion(dataVersion2, version2)
-							if err != nil {
-								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
-							}
-						} else {
-							k8sVersionsVersion2, err = util.GetK8sVersionsForVersion(dataVersion1, version2)
-							if err != nil {
-								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
-							}
-
+						k8sVersionsVersion2, err = util.GetK8sVersionsForVersion(dataVersion2, version2)
+						if err != nil {
+							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
 						}
 					case "rke2":
 						k8sVersionsVersion1, err = util.GetRKE2K8sVersionsForVersion(dataVersion1, version1)
 						if err != nil {
 							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version1, err)
 						}
-						if customChannel2 {
-							k8sVersionsVersion2, err = util.GetRKE2K8sVersionsForVersion(dataVersion2, version2)
-							if err != nil {
-								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
-							}
-						} else {
-							k8sVersionsVersion2, err = util.GetRKE2K8sVersionsForVersion(dataVersion1, version2)
-							if err != nil {
-								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
-							}
-
+						k8sVersionsVersion2, err = util.GetRKE2K8sVersionsForVersion(dataVersion2, version2)
+						if err != nil {
+							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
 						}
 						if !c.Bool("show-all") {
 							k8sVersionsVersion1 = util.GetLatestMajorMinorK8sVersions(k8sVersionsVersion1)
@@ -171,17 +153,9 @@ func main() {
 						if err != nil {
 							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version1, err)
 						}
-						if customChannel2 {
-							k8sVersionsVersion2, err = util.GetK3SK8sVersionsForVersion(dataVersion2, version2)
-							if err != nil {
-								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
-							}
-						} else {
-							k8sVersionsVersion2, err = util.GetK3SK8sVersionsForVersion(dataVersion1, version2)
-							if err != nil {
-								return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
-							}
-
+						k8sVersionsVersion2, err = util.GetK3SK8sVersionsForVersion(dataVersion2, version2)
+						if err != nil {
+							return fmt.Errorf("Error while trying to get k8s versions for [%s], error: [%v]", version2, err)
 						}
 						if !c.Bool("show-all") {
 							k8sVersionsVersion1 = util.GetLatestMajorMinorK8sVersions(k8sVersionsVersion1)
@@ -199,11 +173,7 @@ func main() {
 					sort.Strings(diffK8sVersions)
 
 					replyMessage := fmt.Sprintf("Kubernetes versions found for version [%s] in channel [%s]:\n\n%s\n", version1, channel1, strings.Join(k8sVersionsVersion1, "\n"))
-					if customChannel2 {
-						replyMessage = fmt.Sprintf("%s\nKubernetes versions found for version [%s] in channel [%s]:\n\n%s\n", replyMessage, version2, channel2, strings.Join(k8sVersionsVersion2, "\n"))
-					} else {
-						replyMessage = fmt.Sprintf("%s\nKubernetes versions found for version [%s] in channel [%s]:\n\n%s\n", replyMessage, version2, channel1, strings.Join(k8sVersionsVersion2, "\n"))
-					}
+					replyMessage = fmt.Sprintf("%s\nKubernetes versions found for version [%s] in channel [%s]:\n\n%s\n", replyMessage, version2, channel2, strings.Join(k8sVersionsVersion2, "\n"))
 					if c.Bool("verbose") {
 						replyMessage = fmt.Sprintf("%s\nDifference:\n%s\n\n", replyMessage, strings.Join(diffK8sVersions, "\n"))
 						fmt.Printf(replyMessage)
@@ -234,6 +204,9 @@ func main() {
 					version2 := c.Args().Get(1)
 					channel1 := c.Args().Get(2)
 					channel2 := c.Args().Get(3)
+
+					version1 = util.PrependV(version1)
+					version2 = util.PrependV(version2)
 
 					var dataVersion1 kdm.Data
 					var dataVersion2 kdm.Data
@@ -305,6 +278,8 @@ func main() {
 					version := c.Args().Get(1)
 					channel := c.Args().Get(2)
 
+					version = util.PrependV(version)
+
 					var data kdm.Data
 					var err error
 
@@ -346,6 +321,8 @@ func main() {
 					version := c.Args().Get(2)
 					channel1 := c.Args().Get(3)
 					channel2 := c.Args().Get(4)
+
+					version = util.PrependV(version)
 
 					var dataVersion1 kdm.Data
 					var dataVersion2 kdm.Data
@@ -415,6 +392,8 @@ func main() {
 					version := c.Args().Get(1)
 					channel := c.Args().Get(2)
 
+					version = util.PrependV(version)
+
 					var data kdm.Data
 					var err error
 
@@ -481,6 +460,8 @@ func main() {
 					version := c.Args().Get(2)
 					channel1 := c.Args().Get(3)
 					channel2 := c.Args().Get(4)
+
+					version = util.PrependV(version)
 
 					var dataVersion1 kdm.Data
 					var dataVersion2 kdm.Data
