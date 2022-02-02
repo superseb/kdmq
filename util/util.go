@@ -407,3 +407,10 @@ func GetLatestMajorMinorK8sVersions(k8sVersions []string) []string {
 func GetValidProducts() []string {
 	return []string{"rke", "rke2", "k3s"}
 }
+
+func PrependV(version string) string {
+	if !strings.HasPrefix(version, "v") {
+		return fmt.Sprintf("v%s", version)
+	}
+	return version
+}
