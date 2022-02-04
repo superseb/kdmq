@@ -21,7 +21,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check for repository changes
         run: |
-          git add -A
+          git add embedded/
           if git diff --cached --name-only --diff-filter=A --quiet --exit-code; then
             echo "No changes found in repository"
             echo "changes_exist=false" >> $GITHUB_ENV
