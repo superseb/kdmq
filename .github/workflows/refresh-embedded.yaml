@@ -17,6 +17,8 @@ jobs:
           output="${output//$'\n'/\\n}"
           output="${output// / }"     # replace regular space with 'En Space'
           echo "::set-output name=embedded-data::$output"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Check for repository changes
         run: |
           if git diff --name-only --exit-code; then
