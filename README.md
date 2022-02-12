@@ -17,8 +17,8 @@ Parameters:
 - `rancher_version`: The version of Rancher that is used for querying KDM data, examples: v2.5.10, v2.6.3, v2.6.0
 - `channel`: The source of KDM data used, valid options are:
   - `release` (what is in the released version, no out-of-band data)
-  - `latest` (what is currently released in KDM and active to installs refreshing KDM from online source, coming from https://releases.rancher.com/kontainer-driver-metadata/(release|dev)-(v2.5|v2.6)/data.json)
-  - `dev` (what is currently in development)
+  - `latest` (what is currently released in KDM and active to installs refreshing KDM from online source, coming from https://releases.rancher.com/kontainer-driver-metadata/release-(v2.5|v2.6)/data.json)
+  - `dev` (what is currently in development, coming from https://releases.rancher.com/kontainer-driver-metadata/dev-(v2.5|v2.6)/data.json))
   - `./$FILE` (local data file, must be prefixed with `./` to indicate local data file)
   - `https://URL_TO/data.json` (remote URL data file, must be a valid URL to be used)
 
