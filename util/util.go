@@ -295,22 +295,22 @@ func GetAddonNames(data map[string]map[string]string) []string {
 	return k8sAddons
 }
 
-func GetTemplate(data map[string]map[string]string, templateName, k8sVersion string) (string, string, error) {
+func GetTemplate(data map[string]map[string]string, templateName, k8sVersion string) (string, string, string, error) {
 	versionData := data[templateName]
 	toMatch, err := semver.Make(k8sVersion[1:])
 	if err != nil {
-		return "", "", fmt.Errorf("k8sVersion not sem-ver %s %v", k8sVersion, err)
+		return "", "", "", fmt.Errorf("k8sVersion not sem-ver %s %v", k8sVersion, err)
 	}
 	for k := range versionData {
 		testRange, err := semver.ParseRange(k)
 		if err != nil {
-			return "", "", fmt.Errorf("range for %s not sem-ver %v %v", templateName, testRange, err)
+			return "", "", "", fmt.Errorf("range for %s not sem-ver %v %v", templateName, testRange, err)
 		}
 		if testRange(toMatch) {
-			return versionData[k], data[kdm.TemplateKeys][versionData[k]], nil
+			return versionData[k], k, data[kdm.TemplateKeys][versionData[k]], nil
 		}
 	}
-	return "", "", fmt.Errorf("no %s template found for k8sVersion %s", templateName, k8sVersion)
+	return "", "", "", fmt.Errorf("no %s template found for k8sVersion %s", templateName, k8sVersion)
 }
 
 func FileExists(path string) (bool, error) {
