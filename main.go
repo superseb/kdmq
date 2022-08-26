@@ -425,12 +425,12 @@ func main() {
 					table.SetNoWhiteSpace(true)
 
 					for _, addon := range k8sAddons {
-						templateName, _, err := util.GetTemplate(data.K8sVersionedTemplates, addon, k8sVersion)
+						templateName, templateRange, _, err := util.GetTemplate(data.K8sVersionedTemplates, addon, k8sVersion)
 						if err != nil {
 							table.Append([]string{addon, fmt.Sprintf("%v", err)})
 							continue
 						}
-						table.Append([]string{addon, templateName})
+						table.Append([]string{addon, fmt.Sprintf("%s (%s)", templateName, templateRange)})
 					}
 
 					table.Render()
@@ -495,11 +495,11 @@ func main() {
 					k8sAddons := util.GetAddonNames(dataVersion1.K8sVersionedTemplates)
 
 					for _, addon := range k8sAddons {
-						templateName1, _, err := util.GetTemplate(dataVersion1.K8sVersionedTemplates, addon, k8sVersion1)
+						templateName1, _, _, err := util.GetTemplate(dataVersion1.K8sVersionedTemplates, addon, k8sVersion1)
 						if err != nil {
 							templateName1 = fmt.Sprintf("Error: %v", err)
 						}
-						templateName2, _, err := util.GetTemplate(dataVersion2.K8sVersionedTemplates, addon, k8sVersion2)
+						templateName2, _, _, err := util.GetTemplate(dataVersion2.K8sVersionedTemplates, addon, k8sVersion2)
 						if err != nil {
 							templateName2 = fmt.Sprintf("Error: %v", err)
 						}
