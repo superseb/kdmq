@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # List releases
-for release in $(gh api graphql -F owner='rancher' -F name='rancher' -f query='query($name: String!, $owner: String!) {repository(owner: $owner, name: $name) {releases(last: 30) {nodes { tagName }}}}' | jq -r .data.repository.releases.nodes[].tagName | egrep "^v2.5|^v2.6|^v2.7"); do
+for release in $(gh api graphql -F owner='rancher' -F name='rancher' -f query='query($name: String!, $owner: String!) {repository(owner: $owner, name: $name) {releases(first: 50) {nodes { tagName }}}}' | jq -r .data.repository.releases.nodes[].tagName | egrep "^v2.5|^v2.6|^v2.7"); do
   # Only add if not already exists
   if [ ! -f "./embedded/data.${release}.json" ]; then
     # we can just download the data from v2.7.0 and up
